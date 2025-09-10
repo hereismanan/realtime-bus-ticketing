@@ -1,0 +1,28 @@
+const express = require('express');
+const http = require('http');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const dotenv = require('dotenv');
+dotenv.config();
+const { sequelize } = require('./models');
+const tripsRouter = require('./routes/trips');
+const holdsRouter = require('./routes/holds');
+const purchaseRouter = require('./routes/purchase');
+const { initSocket } = require('./socket');
+const path = require('path');
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
+app.use('/api/trips', tripsRouter);
+app.use('/api/holds', holdsRouter);
+app.use('/api/purchase', purchaseRouter);
+app.use(express.static(path.join(__dirname, '..', 'frontend', 'build')));
+app.get('/health', (req, res) => res.json({ ok: true }));
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'build', 'index.html')));
+const server = http.createServer(app);
+const io = initSocket(server);
+(async () => {
+  await sequelize.sync();
+  const port = process.env.PORT || 4000;
+  server.listen(port, () => {});
+})();
